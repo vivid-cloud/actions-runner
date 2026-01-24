@@ -9,7 +9,7 @@ USER root
 
 # Install Node.js
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
-    apt-get install -y nodejs && \
+    apt-get install -y nodejs zstd && \
     rm -rf /var/lib/apt/lists/*
 
 USER runner
