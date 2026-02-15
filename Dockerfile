@@ -12,8 +12,11 @@ COPY --from=aws-cli /usr/local/bin/ /usr/local/bin/
 USER root
 
 # Install Node.js, build-essential, and zstd
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/playwright-browsers
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
     apt-get install -y build-essential nodejs zstd && \
-    rm -rf /var/lib/apt/lists/*
+    npx playwright@latest install --with-deps chromium && \
+    rm -rf /var/lib/apt/lists/* && \
+    chown -R runner:runner /opt/playwright-browsers
 
 USER runner
