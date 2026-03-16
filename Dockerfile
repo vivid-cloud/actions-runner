@@ -11,10 +11,15 @@ COPY --from=aws-cli /usr/local/bin/ /usr/local/bin/
 
 USER root
 
-# Install Node.js, build-essential, and zstd
+# Install Node.js, build-essential, zstd, and GitHub CLI
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/playwright-browsers
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
-    apt-get install -y build-essential nodejs zstd && \
+    mkdir -p /etc/apt/keyrings && \
+    curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null && \
+    chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null && \
+    apt-get update && \
+    apt-get install -y build-essential nodejs zstd gh && \
     npx playwright@latest install --with-deps chromium && \
     rm -rf /var/lib/apt/lists/* && \
     chown -R runner:runner /opt/playwright-browsers
