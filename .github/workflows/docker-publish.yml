@@ -10,8 +10,6 @@ on:
     - cron: "43 16 * * *"
   push:
     branches: ["main"]
-    # Publish semver tags as releases.
-    tags: ["v*.*.*"]
   pull_request:
     branches: ["main"]
 
@@ -25,7 +23,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
       # This is used to complete the identity challenge
       # with sigstore/fulcio when running outside of PRs.
@@ -34,6 +32,34 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          # Need full tag history to compute the next vYYYY.MM.N build number.
+          fetch-depth: 0
+
+      # Reserve vYYYY.MM.N before build so concurrent main pushes can't collide.
+      # Tag trigger removed on purpose — claiming the tag must not re-run this workflow.
+      - name: Claim calver tag
+        id: calver
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          set -euo pipefail
+          year_month="$(date -u +%Y.%m)"
+          prefix="v${year_month}."
+          for _ in $(seq 1 10); do
+            git fetch --tags --force
+            last="$(git tag -l "${prefix}*" | sed "s/^${prefix}//" | grep -E '^[0-9]+$' | sort -n | tail -1 || true)"
+            next=$((${last:-0} + 1))
+            tag="${prefix}${next}"
+            git tag "${tag}"
+            if git push origin "refs/tags/${tag}"; then
+              echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+              echo "Claimed calver tag: ${tag}"
+              exit 0
+            fi
+            git tag -d "${tag}"
+          done
+          echo "Failed to claim a calver tag after retries" >&2
+          exit 1
 
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
@@ -69,7 +95,7 @@ jobs:
           tags: |
             type=ref,event=branch
             type=ref,event=pr
-            type=ref,event=tag
+            type=raw,value=${{ steps.calver.outputs.tag }},enable=${{ steps.calver.outputs.tag != '' }}
             type=raw,value=latest,enable=${{ github.event_name != 'pull_request' }}
 
       # Build and push Docker image with Buildx (don't push on PR)
@@ -100,3 +126,11 @@ jobs:
         # This step uses the identity token to provision an ephemeral certificate
         # against the sigstore community Fulcio instance.
         run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
+
+      - name: Drop calver tag if publish failed
+        if: failure() && steps.calver.outputs.tag != ''
+        run: |
+          set -euo pipefail
+          tag="${{ steps.calver.outputs.tag }}"
+          git push origin ":refs/tags/${tag}" || true
+          git tag -d "${tag}" || true
