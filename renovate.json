@@ -6,9 +6,8 @@
   ],
   "packageRules": [
     {
-      "description": "Rebuild runner promptly when upstream actions-runner moves",
-      "matchDatasources": ["docker"],
-      "matchPackageNames": ["ghcr.io/actions/actions-runner"],
+      "description": "Automerge dependency updates so main (and calver image tags) advance without manual merge",
+      "matchManagers": ["dockerfile", "github-actions"],
       "automerge": true,
       "automergeType": "pr",
       "platformAutomerge": true
