@@ -1,4 +1,4 @@
-FROM amazon/aws-cli:2.36.41@sha256:be7c8de0160a2e2269159bc2634c002c85b1a21d6322e2ad513b3f7f48325c99 AS aws-cli
+FROM amazon/aws-cli:2.36.42@sha256:f88a264623a4e6700f226ec3f90b902b1a4010810fce1edade1f269a7c071052 AS aws-cli
 
 FROM ghcr.io/actions/actions-runner:2.337.0@sha256:e5496277be5d09bc968b3d64911b74e219ac4a3f2edce956a3ecf9271bea1ef4
 
