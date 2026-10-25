@@ -19,7 +19,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
     chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg && \
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null && \
     apt-get update && \
-    apt-get install -y build-essential nodejs zstd gh && \
+    apt-get install -y build-essential nodejs zstd gh python 3 python3-pip && \
     npx playwright@latest install --with-deps chromium && \
     rm -rf /var/lib/apt/lists/* && \
     chown -R runner:runner /opt/playwright-browsers
